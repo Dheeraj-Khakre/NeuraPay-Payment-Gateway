@@ -2,7 +2,7 @@ package com.dheerxpay.vault.controller;
 
 import com.dheerxpay.common.api.ApiResponse;
 import com.dheerxpay.vault.dto.request.TokenizeRequest;
-import com.dheerxpay.vault.dto.request.response.TokenizeResponse;
+import com.dheerxpay.vault.dto.response.TokenizeResponse;
 import com.dheerxpay.vault.service.VaultService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

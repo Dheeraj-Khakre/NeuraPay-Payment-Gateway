@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-11-13T21:04:58+0530",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 25.0.5 (Eclipse Adoptium)"
+    date = "2026-11-21T14:14:40+0530",
+    comments = "version: 1.6.3, compiler: javac, environment: Java 25.0.2 (Oracle Corporation)"
 )
 @Component
 public class OrderMapperImpl implements OrderMapper {
@@ -86,7 +86,6 @@ public class OrderMapperImpl implements OrderMapper {
             paymentResponse.methodDetails( new LinkedHashMap<String, Object>( map ) );
         }
         paymentResponse.bankReference( payment.getBankReference() );
-        paymentResponse.razorpayPaymentId( payment.getRazorpayPaymentId() );
         paymentResponse.errorCode( payment.getErrorCode() );
         paymentResponse.errorDescription( payment.getErrorDescription() );
         paymentResponse.refundedAmountPaise( payment.getRefundedAmountPaise() );
