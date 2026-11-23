@@ -1,6 +1,7 @@
 package com.dheerxpay.vault.entities;
 
 import com.dheerxpay.common.entity.AuditableEntity;
+import com.dheerxpay.common.enums.CardBrand;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -40,7 +41,7 @@ public class VaultCard extends AuditableEntity {
     private String lastFour;
 
     @Column(name = "brand", length = 30)
-    private String brand;
+    private CardBrand cardBrand;
 
     @Column(name = "bin", length = 6 )
     private String bin;

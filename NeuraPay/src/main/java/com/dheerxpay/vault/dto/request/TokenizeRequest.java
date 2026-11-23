@@ -3,7 +3,8 @@ package com.dheerxpay.vault.dto.request;
 import com.dheerxpay.vault.validation.FutureOrCurrentYear;
 import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.LuhnCheck;
-import org.hibernate.validator.constraints.UUID;
+
+import java.util.UUID;
 
 public record TokenizeRequest(
         @NotBlank(message = "PAN is required")
@@ -28,8 +29,10 @@ public record TokenizeRequest(
          Integer expiryYear,
 
         @NotNull(message = "Customer ID is required")
-        @UUID(message = "Customer ID must be a valid UUID")
-         UUID customerId
+        UUID customerId,
+
+        @Size(min = 3,message ="card holder name should have at least 3 characters")
+        String cardHolderName
 
 ) {
 

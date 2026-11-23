@@ -14,6 +14,7 @@ import com.dheerxpay.payment.repository.PaymentRepository;
 import com.dheerxpay.payment.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +74,15 @@ public class OrderServiceImpl implements OrderService {
         return paymentRepository.findByOrder(orderRecord)
                 .stream().map(orderMapper::toResponse).toList();
 
+
+    }
+
+    @Override
+    @Cacheable(cacheNames = "order",key = "id")
+    public List<OrderResponse> getListOrders(UUID merchantId) {
+        List<OrderRecord> orderList = orderRepository.findAllByMerchantId(merchantId);
+        List<OrderResponse> list = orderList.stream().map(orderMapper::toResponse).toList();
+        return list;
 
     }
 }
