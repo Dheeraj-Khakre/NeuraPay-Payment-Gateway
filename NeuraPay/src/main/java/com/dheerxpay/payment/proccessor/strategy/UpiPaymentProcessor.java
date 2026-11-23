@@ -30,9 +30,8 @@ public class UpiPaymentProcessor implements PaymentProcessor {
         String processorRef = "UPI_PROCESSOR"+ RandomizerUtil.randomBase64(16);
         String redirectUrl = "https://upi.example.com/redirect?paymentId=" + request.paymentId() + "&processorRef=" + processorRef;
 
-        return PaymentProcessorResponse.Success.builder()
+        return PaymentProcessorResponse.Pending.builder()
                 .processorReference(processorRef)
-                .bankReference(redirectUrl)
                 .build();
     }
 }

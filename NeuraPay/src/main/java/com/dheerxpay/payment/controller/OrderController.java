@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
-    private final UUID merchantId = UUID.fromString("9c64a369-81ea-472f-8c79-721fed3526d2");// todo:  get merchant id from merchant context
+    private final UUID merchantId = UUID.fromString("352318c7-7479-4b57-ad5c-c365678bd971");// todo:  get merchant id from merchant context
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@RequestBody @Valid OrderCreateRequest request){
@@ -62,6 +63,19 @@ public class OrderController {
                 )
         );
     }
+
+    @GetMapping("/merchant")
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders(){
+        List<OrderResponse> orderResponseList = orderService.getListOrders(merchantId);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success(
+                        "Got all list or order ",
+
+                        orderResponseList
+                )
+        );
+     }
+
 
 
 }

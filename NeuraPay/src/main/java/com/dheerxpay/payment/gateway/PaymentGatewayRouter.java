@@ -31,7 +31,7 @@ public class PaymentGatewayRouter {
     public PaymentResult capture(PaymentMethod method, UUID paymentId) {
         PaymentAdapter adapter = paymentAdapter.get(method);
         if(adapter == null){
-            throw new ResourceNotFoundException("PAYMENT_ADAPTER_NOT_FOUND", "No payment adapter found for method: " + paymentRequest.paymentMethod());
+            throw new ResourceNotFoundException("PAYMENT_ADAPTER_NOT_FOUND", "No payment adapter found for method: " + method.name());
         }
         return adapter.capture(method,paymentId);
     }
