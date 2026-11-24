@@ -4,10 +4,14 @@ import com.dheerxpay.common.enums.Environment;
 import com.dheerxpay.merchant.dto.request.CreateApiKeyRequest;
 import com.dheerxpay.merchant.dto.response.ApiKeyCreateResponse;
 import com.dheerxpay.merchant.dto.response.ApiKeyResponse;
+import com.dheerxpay.common.enums.UserRoles;
+import com.dheerxpay.merchant.security.JwtService;
+import com.dheerxpay.merchant.security.MerchantPrincipal;
 import com.dheerxpay.merchant.service.ApiKeyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,13 +29,36 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ApiKeyController.class)
+@WebMvcTest(value = ApiKeyController.class, properties = "security.jwt.secret=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
+@Import(JwtService.class)
 class ApiKeyControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private JwtService jwtService;
     @MockitoBean
     private ApiKeyService apiKeyService;
+
+    @Test
+    void requestWithoutTokenIsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/merchants/{merchantId}/apikey", UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(apiKeyService);
+    }
+
+    @Test
+    void merchantCannotManageAnotherMerchantsKeys() throws Exception {
+        UUID authenticatedMerchantId = UUID.randomUUID();
+        UUID requestedMerchantId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/merchants/{merchantId}/apikey", requestedMerchantId)
+                        .header("Authorization", bearerToken(authenticatedMerchantId)))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(apiKeyService);
+    }
 
     @Test
     void createApiKeyReturnsCreatedResponse() throws Exception {
@@ -46,6 +73,7 @@ class ApiKeyControllerIntegrationTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey", merchantId)
+                        .header("Authorization", bearerToken(merchantId))
                         .contentType(APPLICATION_JSON)
                         .content("{\"environment\":\"SANDBOX\"}"))
                 .andExpect(status().isCreated())
@@ -61,6 +89,7 @@ class ApiKeyControllerIntegrationTest {
         UUID merchantId = UUID.randomUUID();
 
         mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey", merchantId)
+                        .header("Authorization", bearerToken(merchantId))
                         .contentType(APPLICATION_JSON)
                         .content("{\"environment\":\"NOT_AN_ENVIRONMENT\"}"))
                 .andExpect(status().isBadRequest())
@@ -71,7 +100,9 @@ class ApiKeyControllerIntegrationTest {
 
     @Test
     void createApiKeyRejectsMissingEnvironment() throws Exception {
-        mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey", UUID.randomUUID())
+        UUID merchantId = UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey", merchantId)
+                        .header("Authorization", bearerToken(merchantId))
                         .contentType(APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -82,7 +113,9 @@ class ApiKeyControllerIntegrationTest {
 
     @Test
     void invalidMerchantIdPathParameterReturnsBadRequest() throws Exception {
-        mockMvc.perform(get("/api/v1/merchants/not-a-uuid/apikey"))
+        UUID merchantId = UUID.randomUUID();
+        mockMvc.perform(get("/api/v1/merchants/not-a-uuid/apikey")
+                        .header("Authorization", bearerToken(merchantId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
 
@@ -96,7 +129,8 @@ class ApiKeyControllerIntegrationTest {
                 new ApiKeyResponse(UUID.randomUUID(), "test-key", Environment.TEST, true, null, null)
         ));
 
-        mockMvc.perform(get("/api/v1/merchants/{merchantId}/apikey", merchantId))
+        mockMvc.perform(get("/api/v1/merchants/{merchantId}/apikey", merchantId)
+                        .header("Authorization", bearerToken(merchantId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].keyId").value("test-key"))
@@ -110,7 +144,8 @@ class ApiKeyControllerIntegrationTest {
         UUID merchantId = UUID.randomUUID();
         UUID keyId = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/merchants/{merchantId}/apikey/{keyId}", merchantId, keyId))
+        mockMvc.perform(delete("/api/v1/merchants/{merchantId}/apikey/{keyId}", merchantId, keyId)
+                        .header("Authorization", bearerToken(merchantId)))
                 .andExpect(status().isNoContent());
 
         verify(apiKeyService).revoke(merchantId, keyId);
@@ -128,11 +163,19 @@ class ApiKeyControllerIntegrationTest {
                 .build();
         when(apiKeyService.rotate(merchantId, keyId)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey/{keyId}/rotate", merchantId, keyId))
+        mockMvc.perform(post("/api/v1/merchants/{merchantId}/apikey/{keyId}/rotate", merchantId, keyId)
+                        .header("Authorization", bearerToken(merchantId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.keyId").value("rotated-key"))
                 .andExpect(jsonPath("$.data.keySecretHash").value("rotated-secret"));
 
         verify(apiKeyService).rotate(merchantId, keyId);
     }
+
+    private String bearerToken(UUID merchantId) {
+        return "Bearer " + jwtService.createAuthResponse(new MerchantPrincipal(
+                UUID.randomUUID(), merchantId, "merchant@example.com", "", UserRoles.OWNER, true
+        )).accessToken();
+    }
+
 }

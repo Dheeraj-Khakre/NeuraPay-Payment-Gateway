@@ -5,6 +5,7 @@ import com.dheerxpay.common.enums.PaymentEvent;
 import com.dheerxpay.common.enums.PaymentStatus;
 import com.dheerxpay.common.exceptions.BusinessRulesViolationException;
 import com.dheerxpay.common.exceptions.ResourceNotFoundException;
+import com.dheerxpay.common.utility.RandomizerUtil;
 import com.dheerxpay.payment.dto.request.PaymentInitRequest;
 import com.dheerxpay.payment.dto.response.PaymentResponse;
 import com.dheerxpay.payment.entities.OrderRecord;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -56,6 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = Payment.builder()
                 .order(order)
                 .amount(order.getAmount())
+                .idempotencyKey(RandomizerUtil.randomBase64(23))
                 .merchantId(merchantId)
                 .method(request.method())
                 .methodDetails(request.methodDetails())
@@ -172,5 +175,11 @@ public class PaymentServiceImpl implements PaymentService {
        paymentRepository.save(payment);
         orderRepository.save(order);
 
+    }
+
+    @Override
+    public List<PaymentResponse> getAllPayments(UUID merchantId) {
+        List<Payment> payments = paymentRepository.findByMerchantId(merchantId);
+        return payments.stream().map(orderMapper::toResponse).toList();
     }
 }

@@ -2,6 +2,7 @@ package com.dheerxpay.payment.controller;
 
 
 import com.dheerxpay.common.api.ApiResponse;
+import com.dheerxpay.merchant.security.MerchantPrincipal;
 import com.dheerxpay.payment.dto.request.OrderCreateRequest;
 import com.dheerxpay.payment.dto.response.OrderResponse;
 import com.dheerxpay.payment.service.OrderService;
@@ -19,12 +20,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderController {
     private final OrderService orderService;
-    private final UUID merchantId = UUID.fromString("352318c7-7479-4b57-ad5c-c365678bd971");// todo:  get merchant id from merchant context
 
     @PostMapping
-    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@RequestBody @Valid OrderCreateRequest request){
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
+            @RequestBody @Valid OrderCreateRequest request
+    ){
+        MerchantPrincipal principal = MerchantPrincipal.current();
 
-        OrderResponse response = orderService.create(merchantId,request);
+        OrderResponse response = orderService.create(principal.merchantId(),request);
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(
                         "Order Created Successfully",
@@ -35,8 +38,11 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable UUID orderId){
-        OrderResponse response = orderService.gerById(merchantId,orderId);
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
+            @PathVariable UUID orderId
+    ){
+        MerchantPrincipal principal = MerchantPrincipal.current();
+        OrderResponse response = orderService.gerById(principal.merchantId(),orderId);
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(
                         "Order Fetched Successfully",
@@ -45,8 +51,11 @@ public class OrderController {
         );
     }
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID orderId){
-        OrderResponse response = orderService.cancelOrder(merchantId,orderId);
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
+            @PathVariable UUID orderId
+    ){
+        MerchantPrincipal principal = MerchantPrincipal.current();
+        OrderResponse response = orderService.cancelOrder(principal.merchantId(),orderId);
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(
                         "Order Cancelled Successfully",
@@ -55,18 +64,22 @@ public class OrderController {
         );
     }
     @GetMapping("/{orderId}/payments")
-    public ResponseEntity<ApiResponse<?>> getListPayment(@PathVariable UUID orderId) {
+    public ResponseEntity<ApiResponse<?>> getListPayment(
+            @PathVariable UUID orderId
+    ) {
+        MerchantPrincipal principal = MerchantPrincipal.current();
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(
                         "Payment List Fetched Successfully",
-                        orderService.getListPayment(merchantId, orderId)
+                        orderService.getListPayment(principal.merchantId(), orderId)
                 )
         );
     }
 
     @GetMapping("/merchant")
-    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders(){
-        List<OrderResponse> orderResponseList = orderService.getListOrders(merchantId);
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders() {
+        MerchantPrincipal principal = MerchantPrincipal.current();
+        List<OrderResponse> orderResponseList = orderService.getListOrders(principal.merchantId());
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(
                         "Got all list or order ",

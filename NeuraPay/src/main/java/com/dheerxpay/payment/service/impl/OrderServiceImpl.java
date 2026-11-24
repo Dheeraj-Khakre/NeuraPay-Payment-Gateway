@@ -78,7 +78,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Cacheable(cacheNames = "order",key = "id")
+    @Cacheable(cacheNames = "order", key = "#merchantId")
     public List<OrderResponse> getListOrders(UUID merchantId) {
         List<OrderRecord> orderList = orderRepository.findAllByMerchantId(merchantId);
         List<OrderResponse> list = orderList.stream().map(orderMapper::toResponse).toList();

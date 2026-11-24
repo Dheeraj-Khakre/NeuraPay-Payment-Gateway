@@ -33,7 +33,7 @@ public interface MerchantMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", source = "request.email")
-    @Mapping(target = "passwordHash", source = "request.password")
+    @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "merchant", source = "merchant")
     @Mapping(target = "role", source = "role")
     AppUser toAppUser(MerchantSignUpRequest request, Merchant merchant, UserRoles role);

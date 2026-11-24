@@ -2,7 +2,10 @@ package com.dheerxpay.payment.controller;
 
 import com.dheerxpay.common.entity.Money;
 import com.dheerxpay.common.enums.OrderStatus;
+import com.dheerxpay.common.enums.UserRoles;
 import com.dheerxpay.common.exceptions.ResourceNotFoundException;
+import com.dheerxpay.merchant.security.JwtService;
+import com.dheerxpay.merchant.security.MerchantPrincipal;
 import com.dheerxpay.payment.dto.request.OrderCreateRequest;
 import com.dheerxpay.payment.dto.response.OrderResponse;
 import com.dheerxpay.payment.dto.response.PaymentResponse;
@@ -10,6 +13,7 @@ import com.dheerxpay.payment.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,7 +31,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(OrderController.class)
+@WebMvcTest(value = OrderController.class, properties = "security.jwt.secret=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
+@Import(JwtService.class)
 class OrderControllerIntegrationTest {
 
     private static final UUID CONTROLLER_MERCHANT_ID =
@@ -35,6 +40,8 @@ class OrderControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private JwtService jwtService;
     @MockitoBean
     private OrderService orderService;
 
@@ -49,6 +56,7 @@ class OrderControllerIntegrationTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/v1/order")
+                        .header("Authorization", bearerToken())
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {
@@ -69,6 +77,7 @@ class OrderControllerIntegrationTest {
     @Test
     void createOrderRejectsMissingMoneyBeforeCallingService() throws Exception {
         mockMvc.perform(post("/api/v1/order")
+                        .header("Authorization", bearerToken())
                         .contentType(APPLICATION_JSON)
                         .content("{\"receipt\":\"receipt-1\"}"))
                 .andExpect(status().isBadRequest())
@@ -81,7 +90,8 @@ class OrderControllerIntegrationTest {
         when(orderService.gerById(CONTROLLER_MERCHANT_ID, orderId))
                 .thenReturn(OrderResponse.builder().id(orderId).status(OrderStatus.CREATED).build());
 
-        mockMvc.perform(get("/api/v1/order/{orderId}", orderId))
+        mockMvc.perform(get("/api/v1/order/{orderId}", orderId)
+                        .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(orderId.toString()))
                 .andExpect(jsonPath("$.data.status").value("CREATED"));
@@ -95,7 +105,8 @@ class OrderControllerIntegrationTest {
         when(orderService.gerById(CONTROLLER_MERCHANT_ID, orderId))
                 .thenThrow(new ResourceNotFoundException("ORDER_RECORD", orderId));
 
-        mockMvc.perform(get("/api/v1/order/{orderId}", orderId))
+        mockMvc.perform(get("/api/v1/order/{orderId}", orderId)
+                        .header("Authorization", bearerToken()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCore").value("ORDER_RECORD_NOT_FOUND"));
     }
@@ -106,7 +117,8 @@ class OrderControllerIntegrationTest {
         when(orderService.cancelOrder(CONTROLLER_MERCHANT_ID, orderId))
                 .thenReturn(OrderResponse.builder().id(orderId).status(OrderStatus.CANCELLED).build());
 
-        mockMvc.perform(delete("/api/v1/order/{orderId}", orderId))
+        mockMvc.perform(delete("/api/v1/order/{orderId}", orderId)
+                        .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
@@ -119,12 +131,24 @@ class OrderControllerIntegrationTest {
         when(orderService.getListPayment(CONTROLLER_MERCHANT_ID, orderId))
                 .thenReturn(List.of(new PaymentResponse()));
 
-        mockMvc.perform(get("/api/v1/order/{orderId}/payments", orderId))
+        mockMvc.perform(get("/api/v1/order/{orderId}/payments", orderId)
+                        .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(1));
 
         verify(orderService).getListPayment(CONTROLLER_MERCHANT_ID, orderId);
+    }
+
+    private String bearerToken() {
+        return "Bearer " + jwtService.createAuthResponse(new MerchantPrincipal(
+                UUID.randomUUID(),
+                CONTROLLER_MERCHANT_ID,
+                "merchant@example.com",
+                "",
+                UserRoles.OWNER,
+                true
+        )).accessToken();
     }
 }

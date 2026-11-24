@@ -44,3 +44,8 @@ payment:
         min-delay-seconds: 4
         max-delay-seconds: 10
         success-rate: 90
+
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:2uh9rhf3uwhf38uhfn83euihfnc834eriudhfcn834ure}
+    access-token-expiration: PT15M

@@ -1,9 +1,13 @@
 package com.dheerxpay.merchant.controller;
 
 import com.dheerxpay.common.enums.MerchantStatus;
+import com.dheerxpay.common.enums.UserRoles;
 import com.dheerxpay.common.exceptions.DuplicateResourceException;
+import com.dheerxpay.merchant.dto.request.LoginRequest;
 import com.dheerxpay.merchant.dto.request.MerchantSignUpRequest;
+import com.dheerxpay.merchant.dto.response.AuthResponse;
 import com.dheerxpay.merchant.dto.response.MerchantResponse;
+import com.dheerxpay.merchant.security.JwtService;
 import com.dheerxpay.merchant.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,37 @@ class AuthControllerIntegrationTest {
     private MockMvc mockMvc;
     @MockitoBean
     private AuthService authService;
+    @MockitoBean
+    private JwtService jwtService;
+
+    @Test
+    void loginReturnsAccessToken() throws Exception {
+        AuthResponse response = new AuthResponse(
+                "access-token",
+                "Bearer",
+                900,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "owner@example.com",
+                UserRoles.OWNER
+        );
+        when(authService.login(any(LoginRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "owner@example.com",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.merchantId").value(response.merchantId().toString()));
+
+        verify(authService).login(any(LoginRequest.class));
+    }
 
     @Test
     void signupReturnsCreatedResponse() throws Exception {

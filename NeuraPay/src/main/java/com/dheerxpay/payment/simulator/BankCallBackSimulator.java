@@ -27,7 +27,10 @@ public class BankCallBackSimulator {
      @Scheduled(fixedDelayString = "${payment.simulator.poll-interval-ms: 5000}")
      private void  processCallBack(){
          Instant globalWindow = Instant.now().minusSeconds(1);
-         List<Payment> candidates  = paymentRepository.findByStatusAndCreatedAtBefore(PaymentStatus.AUTHORIZING, globalWindow);
+         List<Payment> candidates = paymentRepository.findByStatusInAndCreatedAtBefore(
+                 List.of(PaymentStatus.AUTHORIZING, PaymentStatus.PENDING),
+                 globalWindow
+         );
          if(candidates.isEmpty())return;
 
          for(Payment payment:candidates){
@@ -39,6 +42,7 @@ public class BankCallBackSimulator {
 
     private void simulateCallback(Payment payment) {
          // processing payment
+        log.info("Simulating bank callback for payment: {} with method: {}",payment.getId(),payment.getMethod());
         SimulatorConfig.MethodConfig methodConfig = simulatorConfig.getConfig(payment.getMethod());
 
         Instant dueAt  = dueAt(payment,methodConfig);
@@ -56,7 +60,7 @@ public class BankCallBackSimulator {
     }
 
     private boolean shouldApprove(Payment payment, SimulatorConfig.MethodConfig methodConfig) {
-        return methodConfig.getSuccessRate() < Math.abs(payment.getId().hashCode()) % 100;
+        return Math.floorMod(payment.getId().hashCode(), 100) < methodConfig.getSuccessRate();
     }
 
     private void resolve(Payment payment,boolean approve){

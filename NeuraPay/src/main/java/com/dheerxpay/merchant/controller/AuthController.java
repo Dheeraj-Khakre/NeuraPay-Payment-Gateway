@@ -2,7 +2,9 @@ package com.dheerxpay.merchant.controller;
 
 
 import com.dheerxpay.common.api.ApiResponse;
+import com.dheerxpay.merchant.dto.request.LoginRequest;
 import com.dheerxpay.merchant.dto.request.MerchantSignUpRequest;
+import com.dheerxpay.merchant.dto.response.AuthResponse;
 import com.dheerxpay.merchant.dto.response.MerchantResponse;
 import com.dheerxpay.merchant.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,5 +35,15 @@ public class AuthController {
                         "Merchant API-KEY successfully",
                         response
                 ));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @RequestBody @Valid LoginRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Login successful",
+                authService.login(request)
+        ));
     }
 }

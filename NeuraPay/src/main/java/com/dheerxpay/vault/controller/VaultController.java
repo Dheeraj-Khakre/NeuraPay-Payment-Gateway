@@ -1,6 +1,7 @@
 package com.dheerxpay.vault.controller;
 
 import com.dheerxpay.common.api.ApiResponse;
+import com.dheerxpay.merchant.security.MerchantPrincipal;
 import com.dheerxpay.vault.dto.request.TokenizeRequest;
 import com.dheerxpay.vault.dto.response.TokenizeResponse;
 import com.dheerxpay.vault.service.VaultService;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/vault")
@@ -21,15 +21,12 @@ public class VaultController {
 
     private final VaultService vaultService;
 
-    UUID merchantId = UUID.fromString("f3e1c8d0-4b2a-4c9e-9f5b-1a2b3c4d5e6f"); // Replace with your actual merchant ID
-
-
-
     @PostMapping("/tokenize")
-    public ResponseEntity<ApiResponse<TokenizeResponse>> tokenizeCard(@RequestBody TokenizeRequest request) {
-        // Implement the logic to tokenize the card and return the response
-
-        TokenizeResponse response = vaultService.tokenizeCard(request, merchantId);
+    public ResponseEntity<ApiResponse<TokenizeResponse>> tokenizeCard(
+            @RequestBody TokenizeRequest request
+    ) {
+        MerchantPrincipal principal = MerchantPrincipal.current();
+        TokenizeResponse response = vaultService.tokenizeCard(request, principal.merchantId());
         return ResponseEntity.ok(ApiResponse.<TokenizeResponse>builder()
                         .message("Card tokenized successfully")
                         .timestamp(Instant.now())

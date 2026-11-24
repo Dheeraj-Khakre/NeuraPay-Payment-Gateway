@@ -12,7 +12,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PaymentProcessorRouter {
 
-    public Map<PaymentMethod, PaymentProcessor> paymentMethodProcessors;
+    public final  Map<PaymentMethod, PaymentProcessor> paymentMethodProcessors;
 
     public PaymentProcessorResponse charge(PaymentProcessorRequest request) {
         PaymentProcessor processor = paymentMethodProcessors.get(request.paymentMethod());
