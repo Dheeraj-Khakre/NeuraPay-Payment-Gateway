@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: DheerX-Pay
+  profiles:
+    active: dev
+
+
